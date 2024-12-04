@@ -1,27 +1,22 @@
 import streamlit as st
 import pandas as pd
-import requests
+import httpx
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from random import randint
-from time import sleep
 
-# Fonction pour obtenir le status code d'une URL avec logs pour débogage
-def fetch_status(url):
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
-    }
+# Fonction pour obtenir le status code d'une URL avec httpx
+async def fetch_status(client, url):
     try:
-        print(f"Traitement de l'URL: {url}")  # Log de débogage
-        response = requests.get(url, headers=headers, timeout=5)
+        response = await client.get(url, timeout=3)  # Réduit le timeout pour un traitement rapide
         if response.status_code == 200:
             return url, response.status_code
         else:
             return url, f"Error: {response.status_code}"
-    except requests.exceptions.RequestException as e:
+    except httpx.RequestError as e:
         return url, f"Error: {str(e)}"
 
-# Fonction pour traiter les URLs avec multithreading et afficher la barre de progression
+# Fonction pour traiter les URLs en utilisant httpx avec multithreading
 def process_urls(urls):
     results = []
     total_urls = len(urls)
@@ -29,14 +24,13 @@ def process_urls(urls):
     # Créer une barre de progression Streamlit
     progress_bar = st.progress(0)  # Commencer avec une barre vide
 
-    with ThreadPoolExecutor(max_workers=50) as executor:  # Ajustez max_workers pour équilibrer vitesse et charge
-        future_to_url = {executor.submit(fetch_status, url): url for url in urls}
-        for i, future in enumerate(as_completed(future_to_url)):
-            results.append(future.result())
-            # Mise à jour de la barre de progression
-            progress_bar.progress((i + 1) / total_urls)  # Mise à jour en fonction du nombre d'URLs traitées
-            # Simulation d'un délai entre les requêtes pour éviter le blocage (0.5-2 sec)
-            sleep(randint(1, 3))  # Attendre entre 1 et 3 secondes avant de faire la prochaine requête
+    with ThreadPoolExecutor(max_workers=500) as executor:  # Ajustez max_workers pour atteindre la cible de 500/s
+        with httpx.AsyncClient() as client:
+            futures = [executor.submit(asyncio.run, fetch_status(client, url)) for url in urls]
+            for i, future in enumerate(as_completed(futures)):
+                results.append(future.result())
+                # Mise à jour de la barre de progression
+                progress_bar.progress((i + 1) / total_urls)  # Mise à jour en fonction du nombre d'URLs traitées
 
     return results
 
@@ -45,7 +39,9 @@ st.title("URL Crawler - Status Code Checker")
 uploaded_file = st.file_uploader("Importez un fichier d'URLs (CSV ou TXT)", type=["csv", "txt"])
 
 if uploaded_file:
-    urls = uploaded_file.read().decode('utf-8').splitlines()
+    raw_data = uploaded_file.read().decode('utf-8').splitlines()
+    urls = [url.strip() for url in raw_data if url.strip() and len(url.split(',')) == 1]  # Filtrer les lignes mal formatées
+    
     st.write(f"Total des URLs importées : {len(urls)}")
     
     if st.button("Lancer le crawl"):
