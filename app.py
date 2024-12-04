@@ -20,15 +20,23 @@ def fetch_status(url):
     except requests.exceptions.RequestException as e:
         return url, f"Error: {str(e)}"
 
-# Fonction pour traiter les URLs avec multithreading
+# Fonction pour traiter les URLs avec multithreading et afficher la barre de progression
 def process_urls(urls):
     results = []
+    total_urls = len(urls)
+    
+    # Créer une barre de progression Streamlit
+    progress_bar = st.progress(0)  # Commencer avec une barre vide
+
     with ThreadPoolExecutor(max_workers=50) as executor:  # Ajustez max_workers pour équilibrer vitesse et charge
         future_to_url = {executor.submit(fetch_status, url): url for url in urls}
-        for future in as_completed(future_to_url):
+        for i, future in enumerate(as_completed(future_to_url)):
             results.append(future.result())
+            # Mise à jour de la barre de progression
+            progress_bar.progress((i + 1) / total_urls)  # Mise à jour en fonction du nombre d'URLs traitées
             # Simulation d'un délai entre les requêtes pour éviter le blocage (0.5-2 sec)
             sleep(randint(1, 3))  # Attendre entre 1 et 3 secondes avant de faire la prochaine requête
+
     return results
 
 st.title("URL Crawler - Status Code Checker")
