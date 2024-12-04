@@ -1,23 +1,15 @@
 import streamlit as st
-import aiohttp
-import asyncio
 import pandas as pd
+import requests
 import time
 
-# Fonction asynchrone pour obtenir le status code d'une URL
-async def fetch_status(session, url):
+# Fonction pour obtenir le status code d'une URL
+def fetch_status(url):
     try:
-        async with session.get(url) as response:
-            return url, response.status
-    except Exception as e:
+        response = requests.get(url, timeout=10)
+        return url, response.status_code
+    except requests.exceptions.RequestException as e:
         return url, f"Error: {str(e)}"
-
-# Fonction principale pour crawler les URLs
-async def crawl_urls(urls):
-    async with aiohttp.ClientSession() as session:
-        tasks = [fetch_status(session, url) for url in urls]
-        results = await asyncio.gather(*tasks)
-    return results
 
 # Interface Streamlit
 st.title("URL Crawler - Status Code Checker")
@@ -37,7 +29,7 @@ if uploaded_file:
     
     if st.button("Lancer le crawl"):
         start_time = time.time()
-        results = asyncio.run(crawl_urls(urls))
+        results = [fetch_status(url) for url in urls]
         end_time = time.time()
         
         # Création du DataFrame pour afficher les résultats
