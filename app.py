@@ -44,12 +44,12 @@ st.title("URL Crawler - Status Code Checker")
 # Utilisation de st.text_area pour permettre à l'utilisateur de coller les URLs en bulk
 urls_input = st.text_area("Entrez les URLs à crawler (une URL par ligne)", height=300)
 
+# Afficher un message si les URLs sont présentes
 if urls_input:
-    # Traitement des URLs en entrant le texte (séparation des lignes et suppression des espaces)
     urls = [url.strip() for url in urls_input.splitlines() if url.strip()]  # Enlever les lignes vides et les espaces
-    
     st.write(f"Total des URLs importées : {len(urls)}")
     
+    # Bouton pour lancer le crawl
     if st.button("Lancer le crawl"):
         start_time = time.time()
 
