@@ -15,18 +15,20 @@ st.title("URL Crawler - Status Code Checker")
 uploaded_file = st.file_uploader("Importez un fichier d'URLs (CSV ou TXT)", type=["csv", "txt"])
 
 if uploaded_file:
-    df = pd.read_csv(uploaded_file, header=None, names=["URL"], dtype=str)
-    urls = df["URL"].tolist()
+    # Lire le fichier ligne par ligne pour éviter les erreurs de parsing
+    urls = uploaded_file.read().decode('utf-8').splitlines()
     st.write(f"Total des URLs importées : {len(urls)}")
     
     if st.button("Lancer le crawl"):
         start_time = time.time()
-        results = [fetch_status(url) for url in urls]
+        results = [fetch_status(url.strip()) for url in urls if url.strip()]
         end_time = time.time()
         
+        # Création du DataFrame pour afficher les résultats
         result_df = pd.DataFrame(results, columns=["URL", "Status Code"])
         st.dataframe(result_df)
         
+        # Export des résultats
         csv = result_df.to_csv(index=False).encode('utf-8')
         st.download_button("Télécharger les résultats en CSV", data=csv, file_name="crawl_results.csv")
         
