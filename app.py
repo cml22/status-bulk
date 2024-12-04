@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from random import randint
 from time import sleep
 
-# Fonction pour obtenir le status code d'une URL avec gestion des erreurs
+# Fonction pour obtenir le status code d'une URL
 def fetch_status(url):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
@@ -28,7 +28,6 @@ def process_urls(urls):
     # Créer une barre de progression Streamlit
     progress_bar = st.progress(0)  # Commencer avec une barre vide
 
-    # Augmenter max_workers pour un nombre élevé de requêtes simultanées
     with ThreadPoolExecutor(max_workers=500) as executor:  # 500 threads simultanés
         future_to_url = {executor.submit(fetch_status, url): url for url in urls}
         for i, future in enumerate(as_completed(future_to_url)):
@@ -42,12 +41,12 @@ def process_urls(urls):
 
 st.title("URL Crawler - Status Code Checker")
 
-uploaded_file = st.file_uploader("Importez un fichier d'URLs (CSV ou TXT)", type=["csv", "txt"])
+# Utilisation de st.text_area pour permettre à l'utilisateur de coller les URLs en bulk
+urls_input = st.text_area("Entrez les URLs à crawler (une URL par ligne)", height=300)
 
-if uploaded_file:
-    # Lire le fichier et nettoyer les données (retirer les lignes mal formatées)
-    raw_data = uploaded_file.read().decode('utf-8').splitlines()
-    urls = [url.strip() for url in raw_data if url.strip() and len(url.split(',')) == 1]  # Filtrer les lignes mal formatées
+if urls_input:
+    # Traitement des URLs en entrant le texte (séparation des lignes et suppression des espaces)
+    urls = [url.strip() for url in urls_input.splitlines() if url.strip()]  # Enlever les lignes vides et les espaces
     
     st.write(f"Total des URLs importées : {len(urls)}")
     
