@@ -3,22 +3,32 @@ import pandas as pd
 import requests
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from random import randint
+from time import sleep
 
 # Fonction pour obtenir le status code d'une URL
 def fetch_status(url):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
+    }
     try:
-        response = requests.get(url, timeout=10)
-        return url, response.status_code
+        response = requests.get(url, headers=headers, timeout=5)
+        if response.status_code == 200:
+            return url, response.status_code
+        else:
+            return url, f"Error: {response.status_code}"
     except requests.exceptions.RequestException as e:
         return url, f"Error: {str(e)}"
 
 # Fonction pour traiter les URLs avec multithreading
 def process_urls(urls):
     results = []
-    with ThreadPoolExecutor(max_workers=20) as executor:  # Ajustez max_workers pour équilibrer vitesse et charge
+    with ThreadPoolExecutor(max_workers=50) as executor:  # Ajustez max_workers pour équilibrer vitesse et charge
         future_to_url = {executor.submit(fetch_status, url): url for url in urls}
-        for future in stqdm(as_completed(future_to_url), total=len(future_to_url)):
+        for future in as_completed(future_to_url):
             results.append(future.result())
+            # Simulation d'un délai entre les requêtes pour éviter le blocage (0.5-2 sec)
+            sleep(randint(1, 3))  # Attendre entre 1 et 3 secondes avant de faire la prochaine requête
     return results
 
 st.title("URL Crawler - Status Code Checker")
