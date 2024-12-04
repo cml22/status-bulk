@@ -6,12 +6,13 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from random import randint
 from time import sleep
 
-# Fonction pour obtenir le status code d'une URL
+# Fonction pour obtenir le status code d'une URL avec logs pour débogage
 def fetch_status(url):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
     }
     try:
+        print(f"Traitement de l'URL: {url}")  # Log de débogage
         response = requests.get(url, headers=headers, timeout=5)
         if response.status_code == 200:
             return url, response.status_code
